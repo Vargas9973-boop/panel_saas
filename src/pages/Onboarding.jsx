@@ -1,25 +1,32 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 
-// PLACEHOLDER -- mismos ids que el objeto PLANS en
-// supabase/functions/self-serve-onboard/index.ts. El precio/tipo de cobro
-// que de verdad se guarda sale de ahí (nunca de lo que mande el navegador),
-// esto es solo para pintarlo en pantalla. Ajustar cuando se aterricen los
-// planes reales -- ver conversación con el dueño del proyecto.
+// Mismos ids/precios que PLAN_CATALOG en
+// supabase/functions/_shared/plans.ts -- ese archivo es la fuente de verdad
+// (precio, tipo de cobro y qué módulos trae cada plan); esto es solo para
+// pintarlo en pantalla. PRECIOS PROVISIONALES, ver conversación con el
+// dueño del proyecto (2026-09-05) -- pendiente de confirmar montos finales.
 const PLANS = [
   {
-    id: 'mensual',
-    label: 'Renta mensual',
-    price: 1200,
+    id: 'esencial',
+    label: 'Esencial',
+    price: 549,
     period: '/mes',
-    description: '1 sucursal, actualizaciones y soporte incluidos.'
+    description: '1 sucursal, hasta 2 terminales. Ventas, comandas, catálogo, corte de caja, inventario e historial.'
   },
   {
-    id: 'licencia',
-    label: 'Licencia',
-    price: 8000,
-    period: 'pago único',
-    description: 'Pagas una vez, sin mensualidades.'
+    id: 'operacion_completa',
+    label: 'Operación Completa',
+    price: 899,
+    period: '/mes',
+    description: 'Hasta 5 terminales. Agrega cocina (KDS), costos y reportes avanzados.'
+  },
+  {
+    id: 'multisucursal',
+    label: 'Multisucursal',
+    price: 1499,
+    period: '/mes',
+    description: 'Sucursales y terminales ilimitadas. Agrega nómina, asistencia y soporte prioritario.'
   }
 ];
 
