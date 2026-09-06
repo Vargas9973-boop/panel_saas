@@ -30,12 +30,6 @@ const PLANS = [
   }
 ];
 
-// Instalador de escritorio publicado por electron-builder en GitHub
-// Releases (ver package.json::build.publish en la raíz del repo) -- "latest"
-// siempre apunta al asset del release más reciente, no hace falta
-// actualizar esta URL en cada versión.
-const DOWNLOAD_URL = 'https://github.com/Vargas9973-boop/WINGS-HOUSE-ESCRITORIO/releases/latest/download/sucursal-setup.exe';
-
 const currencyFmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
 export default function Onboarding() {
@@ -67,10 +61,14 @@ export default function Onboarding() {
     setStep(2);
   }
 
-  // "Confirmar pago" hoy es un botón simulado -- no hay procesador de pago
-  // conectado todavía (ver comentario en self-serve-onboard/index.ts). Ya
-  // dispara el alta real del negocio para poder probar el resto del flujo.
-  async function handleConfirm() {
+  // "Procesar pago" da de alta el negocio de una vez (tenant/sucursal/
+  // usuario), pero billing_status queda 'pending' -- el cobro es
+  // transferencia bancaria manual, no hay procesador conectado todavía (ver
+  // comentario en self-serve-onboard/index.ts). El resultado de esta
+  // llamada trae los datos para transferir (result.payment), no
+  // credenciales -- esas las genera y revela el SuperAdmin cuando confirme
+  // el pago en su banco (panel SuperAdmin -> "Validar pago").
+  async function handleProcessPayment() {
     setSubmitting(true);
     setError(null);
 
@@ -196,7 +194,7 @@ export default function Onboarding() {
 
         {step === 3 && selectedPlan && (
           <div className="mt-8 space-y-4">
-            <h1 className="text-xl font-semibold">Confirma tu pago</h1>
+            <h1 className="text-xl font-semibold">Procesa tu pago</h1>
             <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
               <p className="text-sm text-neutral-400">Negocio</p>
               <p className="font-medium mb-3 break-words">{form.businessName}</p>
@@ -204,8 +202,8 @@ export default function Onboarding() {
               <p className="font-medium">{selectedPlan.label} -- {currencyFmt.format(selectedPlan.price)} {selectedPlan.period}</p>
             </div>
             <p className="text-xs text-neutral-500">
-              El cobro todavía no está conectado a un procesador de pago real -- este botón simula la
-              confirmación para poder probar el resto del flujo (alta del negocio, credenciales y descarga).
+              Al continuar te mostramos los datos para hacer tu transferencia. En cuanto confirmemos el pago
+              en nuestra cuenta te compartimos tu usuario y el instalador del sistema.
             </p>
             <div className="flex gap-3">
               <button
@@ -218,26 +216,30 @@ export default function Onboarding() {
               </button>
               <button
                 type="button"
-                onClick={handleConfirm}
+                onClick={handleProcessPayment}
                 disabled={submitting}
                 className="flex-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium px-4 py-2.5 disabled:opacity-60 transition-colors"
               >
-                {submitting ? 'Procesando...' : 'Confirmar pago (simulado)'}
+                {submitting ? 'Procesando...' : 'Procesar pago'}
               </button>
             </div>
           </div>
         )}
 
-        {step === 4 && result && <ResultStep result={result} />}
+        {step === 4 && result && <PaymentPendingStep payment={result.payment} />}
       </main>
     </div>
   );
 }
 
-// Igual que OnboardResult en TenantFormModal.jsx (panel SuperAdmin): la
-// contraseña no se guarda en claro en ningún lado, esta pantalla es la
-// única oportunidad de copiarla.
-function ResultStep({ result }) {
+// Datos para transferir (beneficiario/banco/cuenta) vienen del servidor
+// (result.payment, ver self-serve-onboard/index.ts::PAYMENT_INFO) -- nunca
+// hardcodeados aquí, para que cambiar de banco sea editar un solo archivo.
+// Sin usuario/contraseña ni descarga en esta pantalla a propósito: el
+// SuperAdmin las genera y revela hasta validar el pago en su banco (ver
+// wing-house-web/src/pages/Admin.jsx::validatePayment) y se las comparte al
+// cliente por fuera de este panel (WhatsApp/correo).
+function PaymentPendingStep({ payment }) {
   const [copied, setCopied] = useState(null);
 
   async function copy(label, value) {
@@ -252,21 +254,22 @@ function ResultStep({ result }) {
 
   return (
     <div className="mt-8 space-y-4">
-      <h1 className="text-xl font-semibold">¡Listo! Tu negocio ya está dado de alta</h1>
+      <h1 className="text-xl font-semibold">Falta tu transferencia</h1>
+      <p className="text-sm text-neutral-400">
+        Tu negocio ya quedó registrado. Transfiere con estos datos -- usa el concepto tal cual para que
+        podamos identificar tu pago.
+      </p>
       <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 space-y-3 text-sm">
-        <Row label="Usuario" value={result.adminLogin.username} onCopy={() => copy('user', result.adminLogin.username)} copied={copied === 'user'} />
-        <Row label="Contraseña" value={result.adminLogin.password} mono onCopy={() => copy('pass', result.adminLogin.password)} copied={copied === 'pass'} />
+        <Row label="Beneficiario" value={payment.beneficiary} onCopy={() => copy('beneficiary', payment.beneficiary)} copied={copied === 'beneficiary'} />
+        <Row label="Banco" value={payment.bank} onCopy={() => copy('bank', payment.bank)} copied={copied === 'bank'} />
+        <Row label="No. de cuenta" value={payment.account} mono onCopy={() => copy('account', payment.account)} copied={copied === 'account'} />
+        <Row label="Monto" value={currencyFmt.format(payment.amount)} onCopy={() => copy('amount', String(payment.amount))} copied={copied === 'amount'} />
+        <Row label="Concepto" value={payment.reference} mono onCopy={() => copy('reference', payment.reference)} copied={copied === 'reference'} />
       </div>
       <p className="text-xs text-neutral-500">
-        Guarda esta contraseña -- no se puede volver a mostrar después de salir de esta pantalla. Es para
-        entrar al sistema de escritorio (no es tu contraseña de Google).
+        En cuanto confirmemos tu transferencia te compartimos tu usuario, contraseña y el instalador del
+        sistema de escritorio.
       </p>
-      <a
-        href={DOWNLOAD_URL}
-        className="block text-center rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium px-4 py-3 transition-colors"
-      >
-        Descargar Sistema Sucursal (.exe)
-      </a>
     </div>
   );
 }
@@ -298,7 +301,7 @@ function Field({ label, required, children }) {
 }
 
 function Steps({ current }) {
-  const labels = ['Datos', 'Plan', 'Pago', 'Listo'];
+  const labels = ['Datos', 'Plan', 'Pago', 'Transferir'];
   return (
     <div className="flex items-center gap-2">
       {labels.map((label, i) => {
