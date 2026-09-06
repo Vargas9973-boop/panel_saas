@@ -12,21 +12,21 @@ const PLANS = [
     label: 'Esencial',
     price: 549,
     period: '/mes',
-    description: '1 sucursal, hasta 2 terminales. Ventas, comandas, catálogo, corte de caja, inventario e historial.'
+    description: '1 sucursal, hasta 3 usuarios (ej. gerente, mesero, cajero). Ventas, comandas, catálogo, corte de caja, inventario e historial.'
   },
   {
     id: 'operacion_completa',
     label: 'Operación Completa',
     price: 899,
     period: '/mes',
-    description: 'Hasta 5 terminales. Agrega cocina (KDS), costos y reportes avanzados.'
+    description: 'Hasta 6 usuarios. Agrega cocina (KDS), costos y reportes avanzados.'
   },
   {
     id: 'multisucursal',
     label: 'Multisucursal',
     price: 1499,
     period: '/mes',
-    description: 'Sucursales y terminales ilimitadas. Agrega nómina, asistencia y soporte prioritario.'
+    description: 'Usuarios ilimitados y acceso a todos los módulos (nómina, asistencia). Sigue siendo 1 sucursal -- sucursales adicionales se cotizan aparte.'
   }
 ];
 
